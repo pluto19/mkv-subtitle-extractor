@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', initApp);
 export const appState = {
   currentFile: null,
   subtitleTracks: [],
-  selectedTrack: null,
+  subtitleAttachments: [],
+  selectedItem: null,
   ffmpegLoaded: false
 };

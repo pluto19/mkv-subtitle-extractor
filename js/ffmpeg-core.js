@@ -3,6 +3,15 @@ import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile } from '@ffmpeg/util';
 import { appState } from './app.js';
 
+// 定义支持的字幕格式MIME类型
+const SUBTITLE_MIME_TYPES = [
+  'application/x-subrip',               // SRT
+  'text/x-ssa',                         // SSA/ASS
+  'text/plain',                         // 可能是文本格式字幕
+  'application/x-truetype-font',        // 字幕可能使用的字体
+  'application/vnd.ms-opentype'         // 字体
+];
+
 // 创建FFmpeg实例
 let ffmpeg = null;
 
@@ -41,11 +50,11 @@ export async function initFFmpeg() {
   }
 }
 
-// 识别MKV文件中的字幕轨道
+// 识别MKV文件中的字幕轨道和附件
 export async function identifySubtitleTracks(file) {
   if (!isLoaded) {
     const loaded = await initFFmpeg();
-    if (!loaded) return [];
+    if (!loaded) return { tracks: [], attachments: [] };
   }
   
   try {
@@ -60,12 +69,15 @@ export async function identifySubtitleTracks(file) {
     
     // 获取命令输出日志
     const logData = await ffmpeg.readStderr();
+    
+    // 解析字幕轨道和附件
     const tracks = parseSubtitleTracksFromOutput(logData);
+    const attachments = parseAttachmentsFromOutput(logData);
     
     // 清理文件
     await ffmpeg.deleteFile('input.mkv');
     
-    return tracks;
+    return { tracks, attachments };
   } catch (error) {
     console.error('识别字幕轨道失败:', error);
     return [];
@@ -159,15 +171,95 @@ function parseSubtitleTracksFromOutput(output) {
       const format = match[3];
       
       tracks.push({
+        type: 'track',
         index: trackNumber,
         language,
         format,
-        description: `${language} (${format})`
+        description: `轨道 ${trackNumber + 1}: ${language} (${format})`
       });
     }
   }
   
   return tracks;
+}
+
+// 解析附件信息
+function parseAttachmentsFromOutput(output) {
+  const attachments = [];
+  const lines = output.split('\n');
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // 匹配附件信息行
+    // 例如: "Attachment: filename.srt, mimetype: application/x-subrip"
+    const match = line.match(/\s*Attachment:\s+([^,]+),\s+mimetype:\s+([^,\s]+)/i);
+    if (match) {
+      const filename = match[1].trim();
+      const mimetype = match[2].trim();
+      const ext = filename.split('.').pop().toLowerCase();
+      
+      // 检查是否是字幕或字体文件
+      const isSubtitle = ext === 'srt' || ext === 'ass' || ext === 'ssa' || ext === 'vtt';
+      const isFont = ext === 'ttf' || ext === 'otf';
+      
+      if (isSubtitle || isFont || SUBTITLE_MIME_TYPES.includes(mimetype)) {
+        attachments.push({
+          type: 'attachment',
+          filename,
+          mimetype,
+          isSubtitle,
+          isFont,
+          description: `附件: ${filename} (${isSubtitle ? '字幕' : isFont ? '字体' : mimetype})`
+        });
+      }
+    }
+  }
+  
+  return attachments;
+}
+
+// 从附件中提取字幕或字体
+export async function extractAttachment(file, filename) {
+  if (!isLoaded) {
+    const loaded = await initFFmpeg();
+    if (!loaded) return null;
+  }
+  
+  try {
+    // 读取整个文件
+    const buffer = await file.arrayBuffer();
+    
+    // 写入FFmpeg
+    await ffmpeg.writeFile('input.mkv', await fetchFile(buffer));
+    
+    // 提取附件
+    await ffmpeg.exec([
+      '-dump_attachment:t',
+      filename,
+      '-i', 'input.mkv',
+      '-y', filename
+    ]);
+    
+    // 读取提取的附件
+    const data = await ffmpeg.readFile(filename);
+    
+    // 清理文件
+    await ffmpeg.deleteFile('input.mkv');
+    await ffmpeg.deleteFile(filename);
+    
+    // 对于文本类型的附件，转换为文本
+    const ext = filename.split('.').pop().toLowerCase();
+    if (ext === 'srt' || ext === 'ass' || ext === 'ssa' || ext === 'vtt') {
+      return new TextDecoder().decode(data);
+    }
+    
+    // 对于二进制文件，直接返回数据
+    return data;
+  } catch (error) {
+    console.error('提取附件失败:', error);
+    return null;
+  }
 }
 
 // 更新进度条

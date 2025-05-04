@@ -60,22 +60,26 @@ export async function handleFile(file) {
   // 显示加载指示器
   document.getElementById('loading-indicator').style.display = 'block';
   
-  // 识别字幕轨道
+  // 识别字幕轨道和附件
   try {
-    const tracks = await identifySubtitleTracks(file);
+    const { tracks, attachments } = await identifySubtitleTracks(file);
     appState.subtitleTracks = tracks;
+    appState.subtitleAttachments = attachments;
+    
+    // 合并轨道和附件列表
+    const allSubtitleItems = [...tracks, ...attachments];
     
     // 更新UI
-    updateSubtitleTrackList(tracks);
+    updateSubtitleTrackList(allSubtitleItems);
     
     // 隐藏加载指示器
     document.getElementById('loading-indicator').style.display = 'none';
     
     // 显示字幕轨道列表
-    if (tracks.length > 0) {
+    if (allSubtitleItems.length > 0) {
       document.getElementById('subtitle-tracks-container').style.display = 'block';
     } else {
-      showError('未在文件中找到字幕轨道');
+      showError('未在文件中找到字幕轨道或附件');
     }
   } catch (error) {
     console.error('处理文件出错:', error);

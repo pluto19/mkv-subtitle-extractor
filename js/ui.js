@@ -13,13 +13,18 @@ export function setupUI() {
 }
 
 // 更新字幕轨道列表
-export function updateSubtitleTrackList(tracks) {
+export function updateSubtitleTrackList(items) {
   const trackList = document.getElementById('subtitle-track-list');
   trackList.innerHTML = '';
   
-  tracks.forEach((track, index) => {
+  items.forEach((item, index) => {
     const trackItem = document.createElement('div');
     trackItem.classList.add('track-item');
+    
+    // 根据项目类型添加不同的类
+    if (item.type === 'attachment') {
+      trackItem.classList.add('attachment-item');
+    }
     
     const radio = document.createElement('input');
     radio.type = 'radio';
@@ -29,11 +34,11 @@ export function updateSubtitleTrackList(tracks) {
     
     if (index === 0) {
       radio.checked = true;
-      appState.selectedTrack = track;
+      appState.selectedItem = item;
     }
     
     radio.addEventListener('change', () => {
-      appState.selectedTrack = track;
+      appState.selectedItem = item;
       
       // 清空预览
       document.getElementById('subtitle-preview').innerHTML = '';
@@ -42,22 +47,22 @@ export function updateSubtitleTrackList(tracks) {
     
     const label = document.createElement('label');
     label.htmlFor = `track-${index}`;
-    label.textContent = `轨道 ${track.index + 1}: ${track.language} (${track.format})`;
+    label.textContent = item.description;
     
     trackItem.appendChild(radio);
     trackItem.appendChild(label);
     trackList.appendChild(trackItem);
   });
   
-  // 默认选择第一个轨道
-  if (tracks.length > 0) {
-    appState.selectedTrack = tracks[0];
+  // 默认选择第一个项目
+  if (items.length > 0) {
+    appState.selectedItem = items[0];
   }
 }
 
 // 处理预览按钮点击
 async function handlePreviewClick() {
-  if (!appState.currentFile || !appState.selectedTrack) {
+  if (!appState.currentFile || !appState.selectedItem) {
     return;
   }
   
@@ -66,22 +71,40 @@ async function handlePreviewClick() {
   document.getElementById('subtitle-preview-container').style.display = 'none';
   
   try {
-    // 提取字幕内容
-    const format = appState.selectedTrack.format.toLowerCase();
-    const preferredFormat = (format === 'ass' || format === 'ssa') ? 'ass' : 'srt';
+    let subtitleContent;
+    let format;
     
-    const subtitleContent = await extractSubtitle(
-      appState.currentFile,
-      appState.selectedTrack.index,
-      preferredFormat
-    );
+    // 根据选中项类型执行不同的提取操作
+    if (appState.selectedItem.type === 'track') {
+      // 提取轨道字幕
+      format = appState.selectedItem.format.toLowerCase();
+      const preferredFormat = (format === 'ass' || format === 'ssa') ? 'ass' : 'srt';
+      
+      subtitleContent = await extractSubtitle(
+        appState.currentFile,
+        appState.selectedItem.index,
+        preferredFormat
+      );
+      
+    } else if (appState.selectedItem.type === 'attachment') {
+      // 提取附件字幕
+      if (!appState.selectedItem.isSubtitle) {
+        throw new Error('选中的附件不是字幕文件');
+      }
+      
+      format = appState.selectedItem.filename.split('.').pop().toLowerCase();
+      subtitleContent = await extractAttachment(
+        appState.currentFile,
+        appState.selectedItem.filename
+      );
+    }
     
     if (!subtitleContent) {
       throw new Error('无法提取字幕内容');
     }
     
     // 解析字幕
-    const parsedSubtitle = parseSubtitle(subtitleContent, preferredFormat);
+    const parsedSubtitle = parseSubtitle(subtitleContent, format);
     
     // 显示预览
     renderSubtitlePreview(parsedSubtitle);
@@ -99,7 +122,7 @@ async function handlePreviewClick() {
 
 // 处理提取并下载按钮点击
 async function handleExtractClick() {
-  if (!appState.currentFile || !appState.selectedTrack) {
+  if (!appState.currentFile || !appState.selectedItem) {
     return;
   }
   
@@ -107,25 +130,57 @@ async function handleExtractClick() {
   document.getElementById('loading-indicator').style.display = 'block';
   
   try {
-    // 提取字幕内容
-    const format = appState.selectedTrack.format.toLowerCase();
-    const preferredFormat = (format === 'ass' || format === 'ssa') ? 'ass' : 'srt';
+    let content;
+    let fileName;
+    let mimeType = 'text/plain';
     
-    const subtitleContent = await extractSubtitle(
-      appState.currentFile,
-      appState.selectedTrack.index,
-      preferredFormat
-    );
+    // 根据选中项类型执行不同的提取操作
+    if (appState.selectedItem.type === 'track') {
+      // 提取轨道字幕
+      const format = appState.selectedItem.format.toLowerCase();
+      const preferredFormat = (format === 'ass' || format === 'ssa') ? 'ass' : 'srt';
+      
+      content = await extractSubtitle(
+        appState.currentFile,
+        appState.selectedItem.index,
+        preferredFormat
+      );
+      
+      fileName = appState.currentFile.name.replace('.mkv', '') +
+                `_${appState.selectedItem.language}.${preferredFormat}`;
+      
+    } else if (appState.selectedItem.type === 'attachment') {
+      // 提取附件
+      content = await extractAttachment(
+        appState.currentFile,
+        appState.selectedItem.filename
+      );
+      
+      fileName = appState.selectedItem.filename;
+      
+      // 设置适当的MIME类型
+      if (appState.selectedItem.isFont) {
+        if (fileName.endsWith('.ttf')) {
+          mimeType = 'font/ttf';
+        } else if (fileName.endsWith('.otf')) {
+          mimeType = 'font/otf';
+        }
+      }
+    }
     
-    if (!subtitleContent) {
-      throw new Error('无法提取字幕内容');
+    if (!content) {
+      throw new Error('无法提取内容');
     }
     
     // 创建下载链接
-    const fileName = appState.currentFile.name.replace('.mkv', '') + 
-                     `_${appState.selectedTrack.language}.${preferredFormat}`;
+    let blob;
+    if (typeof content === 'string') {
+      blob = new Blob([content], { type: mimeType });
+    } else {
+      // 二进制数据
+      blob = new Blob([content], { type: appState.selectedItem.mimetype || mimeType });
+    }
     
-    const blob = new Blob([subtitleContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     
     const link = document.createElement('a');

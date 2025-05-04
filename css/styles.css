@@ -167,6 +167,11 @@ progress::-webkit-progress-value {
   align-items: center;
 }
 
+.track-item.attachment-item {
+  background-color: #f5f5ff;
+  border-left: 3px solid var(--highlight-color);
+}
+
 .track-item input[type="radio"] {
   margin-right: 10px;
 }
