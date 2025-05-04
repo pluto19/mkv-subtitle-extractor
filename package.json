@@ -1,0 +1,32 @@
+{
+  "name": "srt-tools",
+  "version": "1.0.0",
+  "description": "MKV字幕提取工具",
+  "main": "js/app.js",
+  "scripts": {
+    "dev": "webpack serve --open",
+    "build": "webpack --mode production"
+  },
+  "keywords": [
+    "mkv",
+    "subtitle",
+    "ffmpeg",
+    "wasm"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@ffmpeg/core": "^0.12.10",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
+    "subtitle": "^4.2.2-alpha.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.27.1",
+    "@babel/preset-env": "^7.27.1",
+    "babel-loader": "^10.0.0",
+    "webpack": "^5.99.7",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.1"
+  }
+}

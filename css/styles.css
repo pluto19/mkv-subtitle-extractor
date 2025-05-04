@@ -1,0 +1,268 @@
+/* css/styles.css */
+:root {
+  --primary-color: #4a6baf;
+  --secondary-color: #e9ecef;
+  --text-color: #333;
+  --light-text: #666;
+  --highlight-color: #5f7ed7;
+  --border-color: #ddd;
+  --background-color: #f8f9fa;
+  --error-color: #d9534f;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.6;
+  color: var(--text-color);
+  background-color: #fff;
+  padding: 20px;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+header {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+header h1 {
+  margin-bottom: 10px;
+  font-size: 24px;
+}
+
+header p {
+  opacity: 0.9;
+  font-size: 14px;
+}
+
+main {
+  padding: 20px;
+}
+
+.section {
+  margin-bottom: 30px;
+  padding: 20px;
+  background-color: var(--background-color);
+  border-radius: 6px;
+}
+
+.section h2 {
+  margin-bottom: 15px;
+  font-size: 18px;
+  color: var(--primary-color);
+}
+
+/* 文件拖放区域 */
+.drop-zone {
+  border: 2px dashed var(--border-color);
+  border-radius: 6px;
+  padding: 40px 20px;
+  text-align: center;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--highlight-color);
+  background-color: rgba(95, 126, 215, 0.05);
+}
+
+.drop-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+  color: var(--light-text);
+}
+
+/* 加载指示器 */
+.loading-container {
+  text-align: center;
+  padding: 20px;
+}
+
+.loading-spinner {
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.loading-subtext {
+  font-size: 14px;
+  color: var(--light-text);
+}
+
+/* 进度条 */
+progress {
+  width: 100%;
+  height: 12px;
+  margin: 10px 0;
+  border-radius: 6px;
+  appearance: none;
+  overflow: hidden;
+}
+
+progress::-webkit-progress-bar {
+  background-color: var(--secondary-color);
+  border-radius: 6px;
+}
+
+progress::-webkit-progress-value {
+  background-color: var(--primary-color);
+  border-radius: 6px;
+}
+
+#progress-text {
+  font-size: 14px;
+  color: var(--light-text);
+}
+
+/* 错误信息 */
+.error-container {
+  background-color: #fbeaea;
+  border: 1px solid var(--error-color);
+  color: var(--error-color);
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* 字幕轨道列表 */
+.track-item {
+  padding: 10px 15px;
+  margin-bottom: 5px;
+  background-color: white;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+}
+
+.track-item input[type="radio"] {
+  margin-right: 10px;
+}
+
+/* 按钮样式 */
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--secondary-color);
+  color: var(--text-color);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.button:hover {
+  background-color: #dfe3e8;
+}
+
+.button.primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.button.primary:hover {
+  background-color: var(--highlight-color);
+}
+
+/* 字幕预览 */
+.subtitle-preview {
+  max-height: 400px;
+  overflow-y: auto;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 10px;
+}
+
+.subtitle-entry {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--secondary-color);
+}
+
+.subtitle-entry:last-child {
+  border-bottom: none;
+}
+
+.time-code {
+  font-size: 12px;
+  color: var(--light-text);
+  margin-bottom: 5px;
+  font-family: monospace;
+}
+
+.subtitle-text {
+  white-space: pre-wrap;
+}
+
+.more-subtitles {
+  text-align: center;
+  padding: 10px;
+  font-style: italic;
+  color: var(--light-text);
+}
+
+/* 底部区域 */
+footer {
+  text-align: center;
+  padding: 15px;
+  border-top: 1px solid var(--border-color);
+  font-size: 12px;
+  color: var(--light-text);
+}
+
+/* 响应式设计 */
+@media (max-width: 600px) {
+  body {
+    padding: 10px;
+  }
+  
+  .container {
+    box-shadow: none;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .button {
+    width: 100%;
+  }
+}

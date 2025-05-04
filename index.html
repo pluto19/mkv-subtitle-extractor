@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MKV字幕提取工具</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>MKV字幕提取工具</h1>
+      <p>一个在浏览器中运行的MKV字幕提取和预览工具</p>
+    </header>
+    
+    <main>
+      <!-- 应用加载指示器 -->
+      <div id="app-loading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">正在初始化应用...</div>
+      </div>
+      
+      <!-- 文件选择区域 -->
+      <div id="file-select-container" class="section" style="display: none;">
+        <h2>选择MKV文件</h2>
+        <div id="drop-zone" class="drop-zone">
+          <div class="drop-icon">📁</div>
+          <p>将MKV文件拖放到此处，或点击选择文件</p>
+          <input type="file" id="file-input" accept=".mkv" style="display: none;">
+        </div>
+      </div>
+      
+      <!-- FFmpeg加载指示器 -->
+      <div id="ffmpeg-loading" class="loading-container" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">正在加载处理引擎...</div>
+        <div class="loading-subtext">初次加载可能需要几分钟，请耐心等待</div>
+      </div>
+      
+      <!-- 文件信息区域 -->
+      <div id="file-info-container" class="section" style="display: none;">
+        <h2>文件信息</h2>
+        <div id="file-info"></div>
+      </div>
+      
+      <!-- 通用加载指示器 -->
+      <div id="loading-indicator" class="loading-container" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">处理中...</div>
+        <progress id="progress-bar" value="0" max="100"></progress>
+        <div id="progress-text">0%</div>
+      </div>
+      
+      <!-- 错误信息区域 -->
+      <div id="error-container" class="error-container" style="display: none;">
+        <div id="error-message"></div>
+      </div>
+      
+      <!-- 字幕轨道列表 -->
+      <div id="subtitle-tracks-container" class="section" style="display: none;">
+        <h2>字幕轨道</h2>
+        <div id="subtitle-track-list"></div>
+        
+        <div class="action-buttons">
+          <button id="preview-button" class="button">预览字幕</button>
+          <button id="extract-button" class="button primary">提取并下载</button>
+        </div>
+      </div>
+      
+      <!-- 字幕预览区域 -->
+      <div id="subtitle-preview-container" class="section" style="display: none;">
+        <h2>字幕预览</h2>
+        <div id="subtitle-preview" class="subtitle-preview"></div>
+      </div>
+    </main>
+    
+    <footer>
+      <p>MKV字幕提取工具 - 基于WebAssembly和FFmpeg技术</p>
+    </footer>
+  </div>
+  
+  <script src="/bundle.js"></script>
+</body>
+</html>
