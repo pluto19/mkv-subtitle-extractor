@@ -64,15 +64,18 @@ export async function identifySubtitleTracks(file) {
     // 写入FFmpeg
     await ffmpeg.writeFile('input.mkv', await fetchFile(headerBuffer));
     
-    // 使用FFmpeg分析文件并捕获输出
+    // 设置日志收集
+    let logOutput = '';
+    ffmpeg.on('log', ({ message }) => {
+      logOutput += message + '\n';
+    });
+    
+    // 使用FFmpeg分析文件
     await ffmpeg.exec(['-i', 'input.mkv']);
     
-    // 获取命令输出日志
-    const logData = await ffmpeg.readStderr();
-    
     // 解析字幕轨道和附件
-    const tracks = parseSubtitleTracksFromOutput(logData);
-    const attachments = parseAttachmentsFromOutput(logData);
+    const tracks = parseSubtitleTracksFromOutput(logOutput);
+    const attachments = parseAttachmentsFromOutput(logOutput);
     
     // 清理文件
     await ffmpeg.deleteFile('input.mkv');
@@ -80,7 +83,7 @@ export async function identifySubtitleTracks(file) {
     return { tracks, attachments };
   } catch (error) {
     console.error('识别字幕轨道失败:', error);
-    return [];
+    return { tracks: [], attachments: [] };
   }
 }
 
