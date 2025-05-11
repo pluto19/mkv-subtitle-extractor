@@ -19,6 +19,9 @@
     "@ffmpeg/core": "^0.12.10",
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
+    "cors": "^2.8.5",
+    "ebml": "^3.0.0",
+    "express": "^5.1.0",
     "subtitle": "^4.2.2-alpha.0"
   },
   "devDependencies": {

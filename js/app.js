@@ -1,6 +1,7 @@
 // js/app.js
 import { setupUI } from './ui.js';
 import { initFileHandler } from './file-handler.js';
+import { initLocalFileHandler } from './local-file-handler.js';
 import { initFFmpeg } from './ffmpeg-core.js';
 
 // 应用初始化
@@ -10,8 +11,9 @@ async function initApp() {
   // 设置UI事件监听器
   setupUI();
   
-  // 初始化文件处理模块
-  initFileHandler();
+  // 直接使用本地服务器模式，不再显示选择对话框
+  initLocalFileHandler();
+  console.log('使用本地FFmpeg命令行模式');
   
   // 预加载界面就绪
   document.getElementById('app-loading').style.display = 'none';
@@ -29,5 +31,7 @@ export const appState = {
   subtitleTracks: [],
   subtitleAttachments: [],
   selectedItem: null,
-  ffmpegLoaded: false
+  ffmpegLoaded: false,
+  // 新增属性
+  filename: null // 使用文件名代替文件路径，文件将由服务器查找
 };

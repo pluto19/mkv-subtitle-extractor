@@ -47,6 +47,11 @@
       <div id="loading-indicator" class="loading-container" style="display: none;">
         <div class="loading-spinner"></div>
         <div class="loading-text">处理中...</div>
+      </div>
+      
+      <!-- 进度条容器 -->
+      <div id="progress-container" class="progress-container" style="display: none;">
+        <div class="loading-text">正在分析大文件...</div>
         <progress id="progress-bar" value="0" max="100"></progress>
         <div id="progress-text">0%</div>
       </div>
@@ -75,7 +80,7 @@
     </main>
     
     <footer>
-      <p>MKV字幕提取工具 - 基于WebAssembly和FFmpeg技术</p>
+      <p>MKV字幕提取工具 - 基于本地FFmpeg命令行技术</p>
     </footer>
   </div>
   

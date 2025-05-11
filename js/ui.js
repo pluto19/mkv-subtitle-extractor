@@ -1,7 +1,9 @@
 // js/ui.js
 import { appState } from './app.js';
-import { extractSubtitle } from './ffmpeg-core.js';
 import { parseSubtitle, renderSubtitlePreview } from './subtitle-parser.js';
+
+// 服务器配置
+const SERVER_URL = 'http://localhost:3000';
 
 // 设置UI事件处理
 export function setupUI() {
@@ -80,11 +82,29 @@ async function handlePreviewClick() {
       format = appState.selectedItem.format.toLowerCase();
       const preferredFormat = (format === 'ass' || format === 'ssa') ? 'ass' : 'srt';
       
-      subtitleContent = await extractSubtitle(
-        appState.currentFile,
-        appState.selectedItem.index,
-        preferredFormat
-      );
+      // 使用服务器API提取字幕
+      const response = await fetch(`${SERVER_URL}/api/extract-subtitle`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          filename: appState.filename,
+          trackIndex: appState.selectedItem.index,
+          format: preferredFormat
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`服务器错误: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || '提取字幕失败');
+      }
+      
+      subtitleContent = data.subtitle;
       
     } else if (appState.selectedItem.type === 'attachment') {
       // 提取附件字幕
@@ -93,10 +113,29 @@ async function handlePreviewClick() {
       }
       
       format = appState.selectedItem.filename.split('.').pop().toLowerCase();
-      subtitleContent = await extractAttachment(
-        appState.currentFile,
-        appState.selectedItem.filename
-      );
+      
+      // 使用服务器API提取附件
+      const response = await fetch(`${SERVER_URL}/api/extract-attachment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          videoFilename: appState.filename,
+          attachmentFilename: appState.selectedItem.filename
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`服务器错误: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || '提取附件失败');
+      }
+      
+      subtitleContent = data.content;
     }
     
     if (!subtitleContent) {
@@ -134,27 +173,31 @@ async function handleExtractClick() {
     let fileName;
     let mimeType = 'text/plain';
     
-    // 根据选中项类型执行不同的提取操作
+    // 使用服务器API提取字幕/附件
+    let endpoint, params;
+    
     if (appState.selectedItem.type === 'track') {
-      // 提取轨道字幕
+      // 从轨道提取字幕
+      endpoint = '/api/extract-subtitle';
       const format = appState.selectedItem.format.toLowerCase();
       const preferredFormat = (format === 'ass' || format === 'ssa') ? 'ass' : 'srt';
       
-      content = await extractSubtitle(
-        appState.currentFile,
-        appState.selectedItem.index,
-        preferredFormat
-      );
+      params = {
+        filename: appState.filename,
+        trackIndex: appState.selectedItem.index,
+        format: preferredFormat
+      };
       
-      fileName = appState.currentFile.name.replace('.mkv', '') +
+      fileName = appState.filename.replace('.mkv', '') +
                 `_${appState.selectedItem.language}.${preferredFormat}`;
-      
+                
     } else if (appState.selectedItem.type === 'attachment') {
-      // 提取附件
-      content = await extractAttachment(
-        appState.currentFile,
-        appState.selectedItem.filename
-      );
+      // 从附件提取
+      endpoint = '/api/extract-attachment';
+      params = {
+        videoFilename: appState.filename,
+        attachmentFilename: appState.selectedItem.filename
+      };
       
       fileName = appState.selectedItem.filename;
       
@@ -168,28 +211,65 @@ async function handleExtractClick() {
       }
     }
     
+    // 发送请求
+    const response = await fetch(`${SERVER_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`服务器错误: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || '提取失败');
+    }
+    
+    // 直接下载文件
+    if (data.outputPath) {
+      // 提取文件名
+      const outputFileName = data.outputPath.split(/[\/\\]/).pop();
+      
+      // 下载文件
+      window.location.href = `${SERVER_URL}/api/download/${outputFileName}`;
+      
+      showSuccess(`字幕已提取，正在下载...`);
+      return;
+    }
+    
+    // 如果没有outputPath但有content，使用content
+    content = data.content || data.subtitle;
+    
     if (!content) {
       throw new Error('无法提取内容');
     }
     
-    // 创建下载链接
-    let blob;
-    if (typeof content === 'string') {
-      blob = new Blob([content], { type: mimeType });
+    // 如果服务器没有直接提供下载但返回了内容，创建下载链接
+    if (content) {
+      let blob;
+      if (typeof content === 'string') {
+        blob = new Blob([content], { type: mimeType });
+      } else {
+        // 二进制数据
+        blob = new Blob([content], { type: appState.selectedItem.mimetype || mimeType });
+      }
+      
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      
+      // 释放URL对象
+      setTimeout(() => URL.revokeObjectURL(url), 100);
     } else {
-      // 二进制数据
-      blob = new Blob([content], { type: appState.selectedItem.mimetype || mimeType });
+      showError('提取成功但无法下载文件');
     }
-    
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    link.click();
-    
-    // 释放URL对象
-    setTimeout(() => URL.revokeObjectURL(url), 100);
   } catch (error) {
     console.error('提取字幕出错:', error);
     showError('提取字幕时出错，请重试');
@@ -208,5 +288,20 @@ function showError(message) {
   // 3秒后自动隐藏
   setTimeout(() => {
     document.getElementById('error-container').style.display = 'none';
+  }, 3000);
+}
+
+// 显示成功信息
+function showSuccess(message) {
+  // 复用错误容器显示成功信息
+  const errorElement = document.getElementById('error-message');
+  errorElement.textContent = message;
+  errorElement.style.color = '#4caf50';
+  document.getElementById('error-container').style.display = 'block';
+  
+  // 3秒后自动隐藏
+  setTimeout(() => {
+    document.getElementById('error-container').style.display = 'none';
+    errorElement.style.color = ''; // 恢复默认颜色
   }, 3000);
 }
